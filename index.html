@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>KUBI</title>
+  <meta name="description" content="Todo lo que guardaste en KUBI: notas, tareas y check-ins" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#15161e" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="login-screen">
+    <form id="login-form" class="login-card">
+      <h1>KUBI</h1>
+      <p class="sub">Tus notas, tareas y check-ins</p>
+      <input id="email" type="email" placeholder="Email" autocomplete="username" required />
+      <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password" required />
+      <button id="login-button" class="primary" type="submit">Entrar</button>
+      <div id="login-error"></div>
+    </form>
+  </div>
+
+  <div id="app" class="hidden">
+    <header class="top">
+      <h1>KUBI</h1>
+      <button id="logout-button" class="ghost">Salir</button>
+    </header>
+
+    <section id="panel-notes"></section>
+    <section id="panel-tasks" class="hidden"></section>
+    <section id="panel-checkins" class="hidden"></section>
+
+    <nav class="tabs">
+      <button class="active" data-tab="notes">Notas</button>
+      <button data-tab="tasks">Tareas</button>
+      <button data-tab="checkins">Check-ins</button>
+    </nav>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
