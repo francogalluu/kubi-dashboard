@@ -109,7 +109,19 @@ button.primary {
 
 button.primary:disabled { opacity: 0.6; }
 
-#login-error {
+.login-card button.ghost {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-top: 12px;
+  cursor: pointer;
+}
+
+#login-error,
+#recovery-error {
   color: var(--bad);
   font-size: 13px;
   margin-top: 10px;

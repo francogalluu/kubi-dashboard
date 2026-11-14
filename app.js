@@ -4,10 +4,15 @@ const SUPABASE_KEY = "sb_publishable_0Wqh4k_zDeQoUiLsCAR4NQ_fcoBrEmo";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const loginScreen = document.getElementById("login-screen");
+const recoveryScreen = document.getElementById("recovery-screen");
 const appScreen = document.getElementById("app");
 const loginForm = document.getElementById("login-form");
 const loginError = document.getElementById("login-error");
 const loginButton = document.getElementById("login-button");
+const forgotButton = document.getElementById("forgot-button");
+const recoveryForm = document.getElementById("recovery-form");
+const recoveryError = document.getElementById("recovery-error");
+const recoveryButton = document.getElementById("recovery-button");
 const logoutButton = document.getElementById("logout-button");
 const tabs = document.querySelectorAll("nav.tabs button");
 const panels = {
@@ -30,14 +35,22 @@ function esc(s) {
 
 async function showApp() {
   loginScreen.classList.add("hidden");
+  recoveryScreen.classList.add("hidden");
   appScreen.classList.remove("hidden");
   await loadTab("notes");
 }
 
 function showLogin(message) {
   appScreen.classList.add("hidden");
+  recoveryScreen.classList.add("hidden");
   loginScreen.classList.remove("hidden");
   loginError.textContent = message || "";
+}
+
+function showRecovery() {
+  loginScreen.classList.add("hidden");
+  appScreen.classList.add("hidden");
+  recoveryScreen.classList.remove("hidden");
 }
 
 loginForm.addEventListener("submit", async (e) => {
@@ -53,6 +66,35 @@ loginForm.addEventListener("submit", async (e) => {
     return;
   }
   loaded = { notes: false, tasks: false, checkins: false };
+  showApp();
+});
+
+forgotButton.addEventListener("click", async () => {
+  const email = document.getElementById("email").value.trim();
+  if (!email) {
+    loginError.textContent = "Escribí tu email arriba primero.";
+    return;
+  }
+  loginError.textContent = "";
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname,
+  });
+  loginError.textContent = error
+    ? "No pudimos enviar el mail. Probá de nuevo en un rato."
+    : "Listo, revisá tu mail para elegir una contraseña nueva.";
+});
+
+recoveryForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  recoveryButton.disabled = true;
+  recoveryError.textContent = "";
+  const password = document.getElementById("new-password").value;
+  const { error } = await supabase.auth.updateUser({ password });
+  recoveryButton.disabled = false;
+  if (error) {
+    recoveryError.textContent = "No se pudo guardar. Probá con otra contraseña.";
+    return;
+  }
   showApp();
 });
 
@@ -164,13 +206,22 @@ async function renderCheckins() {
 }
 
 (async function init() {
-  const { data } = await supabase.auth.getSession();
-  if (data.session) showApp();
-  else showLogin();
+  let inRecovery = false;
 
-  supabase.auth.onAuthStateChange((_event, session) => {
-    if (!session) showLogin();
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "PASSWORD_RECOVERY") {
+      inRecovery = true;
+      showRecovery();
+    } else if (!session && !inRecovery) {
+      showLogin();
+    }
   });
+
+  const { data } = await supabase.auth.getSession();
+  if (!inRecovery) {
+    if (data.session) showApp();
+    else showLogin();
+  }
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
