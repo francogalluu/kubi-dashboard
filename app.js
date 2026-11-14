@@ -40,6 +40,14 @@ function fmtDate(iso) {
   return d.toLocaleDateString("es-AR", { day: "2-digit", month: "short", year: "2-digit" });
 }
 
+function fmtDue(iso, precision) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const date = d.toLocaleDateString("es-AR", { day: "2-digit", month: "short", year: "2-digit" });
+  if (precision !== "time") return date;
+  return `${date} ${d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`;
+}
+
 function esc(s) {
   return (s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
@@ -224,7 +232,7 @@ async function renderTasks() {
           <div class="dot"></div>
           <div style="flex:1">
             <h3>${esc(t.title)}</h3>
-            <span class="date">${esc(t.type || "todo")}${t.due_at ? " · " + fmtDate(t.due_at) : ""}</span>
+            <span class="date">${esc(t.type || "todo")}${t.due_at ? " · " + fmtDue(t.due_at, t.due_precision) : ""}</span>
           </div>
         </div>`
     )
