@@ -18,10 +18,21 @@ const tabs = document.querySelectorAll("nav.tabs button");
 const panels = {
   notes: document.getElementById("panel-notes"),
   tasks: document.getElementById("panel-tasks"),
+  expenses: document.getElementById("panel-expenses"),
   checkins: document.getElementById("panel-checkins"),
 };
 
-let loaded = { notes: false, tasks: false, checkins: false };
+let loaded = { notes: false, tasks: false, expenses: false, checkins: false };
+
+const EXPENSE_LABELS = {
+  food: "Comida", transport: "Transporte", entertainment: "Entretenimiento",
+  health: "Salud", home: "Hogar", clothing: "Ropa", utilities: "Servicios",
+  education: "Educación", groceries: "Almacén", other: "Otro",
+};
+
+function fmtMoney(amount, currency) {
+  return new Intl.NumberFormat("es-AR", { style: "currency", currency: currency || "ARS", maximumFractionDigits: 0 }).format(amount);
+}
 
 function fmtDate(iso) {
   if (!iso) return "";
@@ -116,7 +127,53 @@ async function loadTab(name) {
   loaded[name] = true;
   if (name === "notes") return renderNotes();
   if (name === "tasks") return renderTasks();
+  if (name === "expenses") return renderExpenses();
   if (name === "checkins") return renderCheckins();
+}
+
+async function renderExpenses() {
+  panels.expenses.innerHTML = '<div class="loading">Cargando gastos...</div>';
+  const { data, error } = await supabase
+    .from("expenses")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(400);
+  if (error) return (panels.expenses.innerHTML = `<div class="empty">Error: ${esc(error.message)}</div>`);
+  if (!data.length) return (panels.expenses.innerHTML = '<div class="empty">Todavía no hay gastos guardados.</div>');
+
+  const now = new Date();
+  const thisMonth = data.filter((e) => {
+    const d = new Date(e.created_at);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const monthTotal = thisMonth.reduce((sum, e) => sum + Number(e.amount), 0);
+
+  const summary = `
+    <div class="card">
+      <div class="row">
+        <h3>Este mes</h3>
+        <span class="date">${thisMonth.length} gasto${thisMonth.length === 1 ? "" : "s"}</span>
+      </div>
+      <p class="summary" style="font-size:22px;font-weight:700;color:var(--text);margin-top:8px">
+        ${fmtMoney(monthTotal, "ARS")}
+      </p>
+    </div>`;
+
+  const rows = data
+    .map(
+      (e) => `
+        <div class="card">
+          <div class="row">
+            <h3>${fmtMoney(e.amount, e.currency)}</h3>
+            <span class="date">${fmtDate(e.created_at)}</span>
+          </div>
+          ${e.description ? `<p class="summary">${esc(e.description)}</p>` : ""}
+          <span class="badge">${esc(EXPENSE_LABELS[e.category] || e.category)}</span>
+        </div>`
+    )
+    .join("");
+
+  panels.expenses.innerHTML = summary + rows;
 }
 
 async function renderNotes() {
