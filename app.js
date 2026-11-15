@@ -185,6 +185,28 @@ async function renderExpenses() {
   panels.expenses.innerHTML = summary + rows;
 }
 
+const NOTE_KIND_LABELS = {
+  thought: "Pensamientos", idea: "Ideas", task: "Tareas", event: "Eventos",
+  decision: "Decisiones", question: "Preguntas", reference: "Referencias", expense: "Gastos",
+};
+
+function noteCard(n) {
+  const tags = [...(n.topics || []), ...(n.people || []), ...(n.projects || [])]
+    .map((t) => `<span class="tag">${esc(t)}</span>`)
+    .join("");
+  return `
+    <div class="card">
+      <div class="row">
+        <h3>${esc(n.title || "(sin título)")}</h3>
+        <span class="date">${fmtDate(n.created_at)}</span>
+      </div>
+      <p class="summary">${esc(n.summary || n.transcript || "")}</p>
+      <span class="badge">${esc(n.kind || "nota")}</span>
+      ${n.mood ? `<span class="badge">${esc(n.mood)}</span>` : ""}
+      ${tags ? `<div class="tags">${tags}</div>` : ""}
+    </div>`;
+}
+
 async function renderNotes() {
   panels.notes.innerHTML = '<div class="loading">Cargando notas...</div>';
   const { data, error } = await supabase
@@ -195,24 +217,30 @@ async function renderNotes() {
   if (error) return (panels.notes.innerHTML = `<div class="empty">Error: ${esc(error.message)}</div>`);
   if (!data.length) return (panels.notes.innerHTML = '<div class="empty">Todavía no hay notas guardadas.</div>');
 
-  panels.notes.innerHTML = data
-    .map((n) => {
-      const tags = [...(n.topics || []), ...(n.people || []), ...(n.projects || [])]
-        .map((t) => `<span class="tag">${esc(t)}</span>`)
-        .join("");
-      return `
-        <div class="card">
-          <div class="row">
-            <h3>${esc(n.title || "(sin título)")}</h3>
-            <span class="date">${fmtDate(n.created_at)}</span>
-          </div>
-          <p class="summary">${esc(n.summary || n.transcript || "")}</p>
-          <span class="badge">${esc(n.kind || "nota")}</span>
-          ${n.mood ? `<span class="badge">${esc(n.mood)}</span>` : ""}
-          ${tags ? `<div class="tags">${tags}</div>` : ""}
-        </div>`;
-    })
+  const kinds = [...new Set(data.map((n) => n.kind).filter(Boolean))];
+  const chips = ["all", ...kinds]
+    .map(
+      (k) =>
+        `<button class="chip${k === "all" ? " active" : ""}" data-kind="${esc(k)}">${
+          k === "all" ? "Todas" : esc(NOTE_KIND_LABELS[k] || k)
+        }</button>`
+    )
     .join("");
+
+  panels.notes.innerHTML = `<div class="chip-row">${chips}</div><div id="notes-list"></div>`;
+  const list = document.getElementById("notes-list");
+  list.innerHTML = data.map(noteCard).join("");
+
+  panels.notes.querySelectorAll(".chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      panels.notes.querySelectorAll(".chip").forEach((c) => c.classList.toggle("active", c === chip));
+      const kind = chip.dataset.kind;
+      const filtered = kind === "all" ? data : data.filter((n) => n.kind === kind);
+      list.innerHTML = filtered.length
+        ? filtered.map(noteCard).join("")
+        : '<div class="empty">No hay notas en esta categoría.</div>';
+    });
+  });
 }
 
 async function renderTasks() {
