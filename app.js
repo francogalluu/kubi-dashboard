@@ -30,17 +30,6 @@ const EXPENSE_LABELS = {
   education: "Educación", groceries: "Almacén", other: "Otro",
 };
 
-const EXPENSE_EMOJI = {
-  food: "🍔", transport: "🚗", entertainment: "🎬", health: "🩺", home: "🏠",
-  clothing: "👕", utilities: "💡", education: "📚", groceries: "🛒", other: "📦",
-};
-
-const NOTE_EMOJI = {
-  thought: "💭", idea: "💡", task: "✅", event: "📅", decision: "🧭",
-  question: "❓", reference: "📌", expense: "💸",
-};
-
-const TASK_EMOJI = { todo: "✅", event: "📅", reminder: "🔔" };
 
 function fmtMoney(amount, currency) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: currency || "ARS", maximumFractionDigits: 0 }).format(amount);
@@ -171,7 +160,7 @@ async function renderExpenses() {
   const summary = `
     <div class="card">
       <div class="row">
-        <h3>💰 Este mes</h3>
+        <h3>Este mes</h3>
         <span class="date">${thisMonth.length} gasto${thisMonth.length === 1 ? "" : "s"}</span>
       </div>
       <p class="summary" style="font-size:22px;font-weight:700;color:var(--text);margin-top:8px">
@@ -184,7 +173,7 @@ async function renderExpenses() {
       (e) => `
         <div class="card">
           <div class="row">
-            <h3>${EXPENSE_EMOJI[e.category] || "📦"} ${fmtMoney(e.amount, e.currency)}</h3>
+            <h3>${fmtMoney(e.amount, e.currency)}</h3>
             <span class="date">${fmtDate(e.created_at)}</span>
           </div>
           ${e.description ? `<p class="summary">${esc(e.description)}</p>` : ""}
@@ -218,7 +207,7 @@ async function renderNotes() {
             <span class="date">${fmtDate(n.created_at)}</span>
           </div>
           <p class="summary">${esc(n.summary || n.transcript || "")}</p>
-          <span class="badge">${NOTE_EMOJI[n.kind] || "🧠"} ${esc(n.kind || "nota")}</span>
+          <span class="badge">${esc(n.kind || "nota")}</span>
           ${n.mood ? `<span class="badge">${esc(n.mood)}</span>` : ""}
           ${tags ? `<div class="tags">${tags}</div>` : ""}
         </div>`;
@@ -244,7 +233,7 @@ async function renderTasks() {
           <div class="dot"></div>
           <div style="flex:1">
             <h3>${esc(t.title)}</h3>
-            <span class="date">${TASK_EMOJI[t.type] || "✅"} ${esc(t.type || "todo")}${t.due_at ? " · " + fmtDue(t.due_at, t.due_precision) : ""}</span>
+            <span class="date">${esc(t.type || "todo")}${t.due_at ? " · " + fmtDue(t.due_at, t.due_precision) : ""}</span>
           </div>
         </div>`
     )
@@ -264,19 +253,18 @@ async function renderCheckins() {
   panels.checkins.innerHTML = data
     .map((c) => {
       const emotions = (c.emotions || []).map((e) => `<span class="tag">${esc(e)}</span>`).join("");
-      const mood = c.sentiment_score > 0.2 ? "😊" : c.sentiment_score < -0.2 ? "😔" : "😐";
       return `
         <div class="card">
           <div class="row">
-            <h3>${mood} ${fmtDate(c.local_date)}</h3>
+            <h3>${fmtDate(c.local_date)}</h3>
           </div>
           <div class="scores">
             <span class="score">Ánimo<br><b>${c.sentiment_score ?? "-"}</b></span>
-            <span class="score">Energía ⚡<br><b>${c.energy_score ?? "-"}/10</b></span>
+            <span class="score">Energía<br><b>${c.energy_score ?? "-"}/10</b></span>
           </div>
-          ${c.highlight ? `<p class="summary">✨ <b>Lo mejor:</b> ${esc(c.highlight)}</p>` : ""}
-          ${c.concern ? `<p class="summary">😟 <b>Preocupación:</b> ${esc(c.concern)}</p>` : ""}
-          ${c.gratitude ? `<p class="summary">🙏 <b>Gratitud:</b> ${esc(c.gratitude)}</p>` : ""}
+          ${c.highlight ? `<p class="summary"><b>Lo mejor:</b> ${esc(c.highlight)}</p>` : ""}
+          ${c.concern ? `<p class="summary"><b>Preocupación:</b> ${esc(c.concern)}</p>` : ""}
+          ${c.gratitude ? `<p class="summary"><b>Gratitud:</b> ${esc(c.gratitude)}</p>` : ""}
           ${emotions ? `<div class="tags">${emotions}</div>` : ""}
         </div>`;
     })
