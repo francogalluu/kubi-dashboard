@@ -286,6 +286,16 @@ nav.tabs button.active .tab-icon { background: var(--ink); color: var(--ink-cont
   font-weight: 500;
 }
 
+.card .analysis {
+  margin: 10px 0 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--border);
+  font-size: 13.5px;
+  font-style: italic;
+  color: var(--text);
+  line-height: 1.5;
+}
+
 .card .summary {
   margin: 6px 0 0;
   font-size: 13.5px;

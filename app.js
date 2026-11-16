@@ -354,9 +354,10 @@ async function renderCheckins() {
             <h3>${fmtDate(c.local_date)}</h3>
           </div>
           <div class="scores">
-            <span class="score">Ánimo<br><b>${c.sentiment_score ?? "-"}</b></span>
+            <span class="score">Ánimo<br><b>${c.mood_score ?? "-"}/10</b></span>
             <span class="score">Energía<br><b>${c.energy_score ?? "-"}/10</b></span>
           </div>
+          ${c.summary ? `<p class="analysis">${esc(c.summary)}</p>` : ""}
           ${c.highlight ? `<p class="summary"><b>Lo mejor:</b> ${esc(c.highlight)}</p>` : ""}
           ${c.concern ? `<p class="summary"><b>Preocupación:</b> ${esc(c.concern)}</p>` : ""}
           ${c.gratitude ? `<p class="summary"><b>Gratitud:</b> ${esc(c.gratitude)}</p>` : ""}
