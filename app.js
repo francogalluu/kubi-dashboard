@@ -168,21 +168,88 @@ async function renderExpenses() {
       </p>
     </div>`;
 
-  const rows = data
-    .map(
-      (e) => `
-        <div class="card">
-          <div class="row">
-            <h3>${fmtMoney(e.amount, e.currency)}</h3>
-            <span class="date">${fmtDate(e.created_at)}</span>
+  // Scoped to this month, same as the total above -- "where did it go"
+  // only makes sense against the total it's a slice of.
+  panels.expenses.innerHTML = summary + categoryBreakdown(thisMonth, monthTotal) + dayGroups(data);
+}
+
+function categoryBreakdown(expenses, total) {
+  if (!total) return "";
+  const byCategory = new Map();
+  for (const e of expenses) {
+    const key = e.category || "other";
+    byCategory.set(key, (byCategory.get(key) || 0) + Number(e.amount));
+  }
+  const rows = [...byCategory.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([cat, amount]) => {
+      const pct = Math.round((amount / total) * 100);
+      return `
+        <div class="cat-row">
+          <div class="cat-row-top">
+            <span class="cat-name">${esc(EXPENSE_LABELS[cat] || cat)}</span>
+            <span class="cat-amount">${fmtMoney(amount, "ARS")} · ${pct}%</span>
           </div>
-          ${e.description ? `<p class="summary">${esc(e.description)}</p>` : ""}
-          <span class="badge">${esc(EXPENSE_LABELS[e.category] || e.category)}</span>
+          <div class="cat-bar"><div class="cat-bar-fill" style="width:${pct}%"></div></div>
+        </div>`;
+    })
+    .join("");
+  return `<div class="card"><h3 class="card-title">Por categoría</h3>${rows}</div>`;
+}
+
+// Local calendar day, not a UTC one -- "hoy"/"ayer" has to match the day the
+// person actually experienced, same reasoning as the firmware's own
+// day-boundary math for reminders.
+function dayKey(iso) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+function dayLabel(iso) {
+  const d = new Date(iso);
+  const startOf = (dt) => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()).getTime();
+  const diffDays = Math.round((startOf(new Date()) - startOf(d)) / 86400000);
+  if (diffDays === 0) return "Hoy";
+  if (diffDays === 1) return "Ayer";
+  return d.toLocaleDateString("es-AR", { weekday: "long", day: "2-digit", month: "short" });
+}
+
+function dayGroups(expenses) {
+  // `expenses` is already newest-first, so grouping sequentially (a Map,
+  // not a sort) keeps that same order across groups for free.
+  const groups = new Map();
+  for (const e of expenses) {
+    const key = dayKey(e.created_at);
+    if (!groups.has(key)) groups.set(key, { label: dayLabel(e.created_at), items: [], total: 0 });
+    const g = groups.get(key);
+    g.items.push(e);
+    g.total += Number(e.amount);
+  }
+  return [...groups.values()]
+    .map(
+      (g) => `
+        <div class="day-group">
+          <div class="day-head">
+            <span class="day-label">${esc(g.label)}</span>
+            <span class="day-total">${fmtMoney(g.total, "ARS")}</span>
+          </div>
+          <div class="card day-card">
+            ${g.items
+              .map(
+                (e) => `
+                  <div class="expense-row">
+                    <div class="expense-row-text">
+                      <span class="expense-desc">${esc(e.description || EXPENSE_LABELS[e.category] || "Gasto")}</span>
+                      <span class="badge">${esc(EXPENSE_LABELS[e.category] || e.category)}</span>
+                    </div>
+                    <span class="expense-amount">${fmtMoney(e.amount, e.currency)}</span>
+                  </div>`
+              )
+              .join("")}
+          </div>
         </div>`
     )
     .join("");
-
-  panels.expenses.innerHTML = summary + rows;
 }
 
 const NOTE_KIND_LABELS = {

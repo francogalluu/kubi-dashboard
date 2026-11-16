@@ -366,6 +366,106 @@ nav.tabs button.active .tab-icon { background: var(--ink); color: var(--ink-cont
 
 .score b { color: var(--text); font-size: 15px; font-weight: 700; }
 
+.card-title {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- gastos: category breakdown ---------- */
+
+.cat-row { margin-bottom: 14px; }
+.cat-row:last-child { margin-bottom: 0; }
+
+.cat-row-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13.5px;
+  margin-bottom: 6px;
+}
+
+.cat-row-top .cat-name { font-weight: 600; }
+.cat-row-top .cat-amount { font-weight: 600; color: var(--text-dim); white-space: nowrap; }
+
+.cat-bar {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.cat-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ink);
+}
+
+/* ---------- gastos: day-by-day ---------- */
+
+.day-group { margin-bottom: 22px; }
+.day-group .card { margin-bottom: 0; }
+
+.day-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0 6px 8px;
+}
+
+.day-head .day-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: capitalize;
+}
+
+.day-head .day-total {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-faint);
+}
+
+.day-card { padding: 4px 18px; }
+
+.expense-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.expense-row:last-child { border-bottom: none; }
+
+.expense-row-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.expense-desc {
+  font-size: 14.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expense-row .badge { margin: 0; flex-shrink: 0; }
+
+.expense-amount {
+  font-size: 14.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .empty {
   text-align: center;
   color: var(--text-faint);
