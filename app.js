@@ -20,9 +20,11 @@ const panels = {
   tasks: document.getElementById("panel-tasks"),
   expenses: document.getElementById("panel-expenses"),
   checkins: document.getElementById("panel-checkins"),
+  routines: document.getElementById("panel-routines"),
 };
 
-let loaded = { notes: false, tasks: false, expenses: false, checkins: false };
+const NOT_LOADED = { notes: false, tasks: false, expenses: false, checkins: false, routines: false };
+let loaded = { ...NOT_LOADED };
 
 const EXPENSE_LABELS = {
   food: "Comida", transport: "Transporte", entertainment: "Entretenimiento",
@@ -85,7 +87,7 @@ loginForm.addEventListener("submit", async (e) => {
     loginError.textContent = "No pudimos iniciar sesión. Revisá el email y la contraseña.";
     return;
   }
-  loaded = { notes: false, tasks: false, checkins: false };
+  loaded = { ...NOT_LOADED };
   showApp();
 });
 
@@ -138,6 +140,7 @@ async function loadTab(name) {
   if (name === "tasks") return renderTasks();
   if (name === "expenses") return renderExpenses();
   if (name === "checkins") return renderCheckins();
+  if (name === "routines") return renderRoutines();
 }
 
 async function renderExpenses() {
@@ -365,6 +368,192 @@ async function renderCheckins() {
         </div>`;
     })
     .join("");
+}
+
+// ---------- rutinas ("hace cuánto que no...") ----------
+// Days are counted on LOCAL calendar dates (the server stores last_done_on /
+// done_on as plain YYYY-MM-DD in Buenos Aires time), so "hace 53 días" here
+// matches what KUBI's own screen says.
+
+function parseLocalDate(ymd) {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function daysBetween(a, b) {
+  return Math.round((b.getTime() - a.getTime()) / 86400000);
+}
+
+function todayLocal() {
+  const n = new Date();
+  return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+}
+
+function fmtShortDate(ymd) {
+  return parseLocalDate(ymd).toLocaleDateString("es-AR", { day: "numeric", month: "short" });
+}
+
+function fmtLongDate(ymd) {
+  return parseLocalDate(ymd).toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
+}
+
+function plural(n, one, many) {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+// Same order as the device's HACE CUANTO screen (server/app/main.py,
+// _format_routines): furthest past its goal first, then most days; never
+// logged at the bottom. "Overdue" only exists when the user said a goal --
+// nothing here guesses one.
+function routineState(r, today) {
+  const days = r.last_done_on ? daysBetween(parseLocalDate(r.last_done_on), today) : null;
+  const goal = r.every_days || null;
+  const overdue = days !== null && goal !== null && days >= goal;
+  return { days, goal, overdue, ratio: days === null ? -1 : goal ? days / goal : 0 };
+}
+
+let routinesCache = null;
+
+async function renderRoutines() {
+  panels.routines.innerHTML = '<div class="loading">Cargando rutinas...</div>';
+  const [routinesRes, logsRes] = await Promise.all([
+    supabase.from("routines").select("*"),
+    supabase.from("routine_logs").select("routine_id, done_on").order("done_on", { ascending: false }).limit(2000),
+  ]);
+  const error = routinesRes.error || logsRes.error;
+  if (error) return (panels.routines.innerHTML = `<div class="empty">Error: ${esc(error.message)}</div>`);
+  routinesCache = { routines: routinesRes.data, logs: logsRes.data };
+  showRoutineList();
+}
+
+function showRoutineList() {
+  const { routines } = routinesCache;
+  if (!routines.length) {
+    panels.routines.innerHTML = `
+      <div class="empty">Todavía no estás contando nada.</div>
+      <div class="routine-hint">Decile a KUBI algo que hiciste y que repetís cada tanto: “me corté el pelo” o “le hice el service al auto, cada 6 meses”.</div>`;
+    return;
+  }
+  const today = todayLocal();
+  const items = routines
+    .map((r) => ({ r, s: routineState(r, today) }))
+    .sort((a, b) => b.s.ratio - a.s.ratio || (b.s.days ?? -1) - (a.s.days ?? -1));
+  const dueCount = items.filter((i) => i.s.overdue).length;
+
+  const stats = `
+    <div class="routine-stats">
+      <div class="routine-stat">
+        <div class="routine-stat-num${dueCount ? " is-due" : ""}">${dueCount}</div>
+        <div class="routine-stat-label">ya te ${dueCount === 1 ? "toca" : "tocan"}</div>
+      </div>
+      <div class="routine-stat">
+        <div class="routine-stat-num">${items.length}</div>
+        <div class="routine-stat-label">contando</div>
+      </div>
+    </div>`;
+
+  const cards = items
+    .map(({ r, s }) => {
+      const number = s.days === null ? "–" : s.days === 0 ? "Hoy" : String(s.days);
+      const unit = s.days === null || s.days === 0 ? "" : s.days === 1 ? "día" : "días";
+      const last = r.last_done_on ? `Última vez: ${fmtShortDate(r.last_done_on)}` : "Sin registrar todavía";
+      const goalText = s.goal ? ` · cada ${plural(s.goal, "día", "días")}` : " · sin meta";
+      const pct = s.goal && s.days !== null ? Math.min(100, Math.round((s.days / s.goal) * 100)) : 0;
+      return `
+        <button class="card routine-card" data-id="${esc(r.id)}">
+          <div class="row">
+            <h3>${esc(r.name)}</h3>
+            <span class="routine-days${s.overdue ? " is-due" : ""}">${number}${unit ? ` <small>${unit}</small>` : ""}</span>
+          </div>
+          <div class="routine-sub">${last}${goalText}</div>
+          ${s.goal ? `<div class="routine-bar"><div class="routine-bar-fill${s.overdue ? " is-due" : ""}" style="width:${pct}%"></div></div>` : ""}
+          ${s.overdue ? `<span class="routine-badge">Ya te toca · ${plural(s.days - s.goal, "día", "días")} pasado</span>` : ""}
+        </button>`;
+    })
+    .join("");
+
+  panels.routines.innerHTML = `${stats}<h3 class="card-title">Hace cuánto</h3>${cards}
+    <div class="routine-hint">Para sumar una, decile a KUBI: “me corté el pelo”. Para ponerle meta: “cortarme el pelo, cada 45 días”.</div>`;
+  panels.routines.querySelectorAll(".routine-card").forEach((btn) =>
+    btn.addEventListener("click", () => showRoutineDetail(btn.dataset.id))
+  );
+}
+
+function showRoutineDetail(id) {
+  const r = routinesCache.routines.find((x) => x.id === id);
+  if (!r) return showRoutineList();
+  const s = routineState(r, todayLocal());
+  // Distinct dates, newest first -- logging the same day twice is one time.
+  const dates = [...new Set(routinesCache.logs.filter((l) => l.routine_id === id).map((l) => l.done_on))]
+    .sort()
+    .reverse();
+  const gaps = dates.slice(0, -1).map((d, i) => daysBetween(parseLocalDate(dates[i + 1]), parseLocalDate(d)));
+  const avg = gaps.length ? Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length) : null;
+
+  const hero =
+    s.days === null
+      ? `<div class="routine-hero"><div class="routine-hero-sub">Todavía no hay ninguna vez registrada.</div></div>`
+      : `
+      <div class="routine-hero">
+        <div class="routine-hero-num${s.overdue ? " is-due" : ""}">${s.days === 0 ? "Hoy" : s.days}${
+          s.days === 0 ? "" : ` <small>${s.days === 1 ? "día" : "días"}</small>`
+        }</div>
+        <div class="routine-hero-sub">${s.days === 0 ? "lo hiciste hoy" : `desde la última vez, el ${fmtLongDate(r.last_done_on)}`}</div>
+        ${
+          s.goal
+            ? `<div class="routine-bar routine-bar-lg"><div class="routine-bar-fill${s.overdue ? " is-due" : ""}" style="width:${Math.min(
+                100,
+                Math.round((s.days / s.goal) * 100)
+              )}%"></div></div>
+               <div class="routine-goal-row"><span>Meta: cada ${plural(s.goal, "día", "días")}</span>${
+                 s.overdue
+                   ? `<span class="is-due">${plural(s.days - s.goal, "día", "días")} pasado</span>`
+                   : `<span>faltan ${plural(s.goal - s.days, "día", "días")}</span>`
+               }</div>`
+            : ""
+        }
+      </div>`;
+
+  const history = dates
+    .map(
+      (d, i) => `
+      <div class="routine-log${i === 0 ? " is-latest" : ""}">
+        <span class="routine-log-dot"></span>
+        <span class="routine-log-date">${fmtShortDate(d)} ${d.slice(0, 4)}</span>
+        <span class="routine-log-gap">${
+          i === 0
+            ? s.days === 0 ? "hoy" : `hace ${plural(s.days, "día", "días")}`
+            : i < dates.length ? `${plural(gaps[i - 1], "día", "días")} antes` : ""
+        }</span>
+      </div>`
+    )
+    .join("");
+
+  panels.routines.innerHTML = `
+    <div class="routine-detail-head">
+      <button class="icon-button" id="routine-back" aria-label="Volver a Rutinas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div>
+        <p class="routine-eyebrow">Rutina</p>
+        <h2>${esc(r.name)}</h2>
+      </div>
+    </div>
+    ${hero}
+    <div class="routine-stats">
+      <div class="routine-stat routine-stat-outline">
+        <div class="routine-stat-label">En la práctica</div>
+        <div class="routine-stat-value">${avg === null ? "–" : `cada ${plural(avg, "día", "días")}`}</div>
+      </div>
+      <div class="routine-stat routine-stat-outline">
+        <div class="routine-stat-label">Registradas</div>
+        <div class="routine-stat-value">${plural(dates.length, "vez", "veces")}</div>
+      </div>
+    </div>
+    ${dates.length ? `<h3 class="card-title">Historial</h3><div class="card routine-history">${history}</div>` : ""}
+    <div class="routine-hint">Se registra por voz en KUBI. Para dejar de contarla: “dejá de contar ${esc(r.name.toLowerCase())}”.</div>`;
+  document.getElementById("routine-back").addEventListener("click", showRoutineList);
+  window.scrollTo(0, 0);
 }
 
 (async function init() {

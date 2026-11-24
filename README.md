@@ -18,7 +18,8 @@ FastAPI del repo principal para nada de lectura.
   contraseña. Es un mecanismo aparte del que usa el dispositivo
   (`X-KUBI-Key` fijo) -- acá hay una cuenta real de Supabase (single-user,
   es solo Franco).
-- **Datos**: lee las tablas `notes`, `tasks`, `expenses`, `checkins` con la
+- **Datos**: lee las tablas `notes`, `tasks`, `expenses`, `checkins`,
+  `routines`, `routine_logs` con la
   anon/publishable key, permitido por políticas RLS `for select to
   authenticated using (true)` en cada tabla (sin scoping por usuario).
   No hay políticas de insert/update/delete: la web es de solo lectura by

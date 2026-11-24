@@ -491,3 +491,206 @@ nav.tabs button.active .tab-icon { background: var(--ink); color: var(--ink-cont
 }
 
 .hidden { display: none !important; }
+
+/* ---------- rutinas ("hace cuánto que no...") ---------- */
+
+.routine-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.routine-stat {
+  background: var(--surface-sunken);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
+.routine-stat-outline {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.routine-stat-num {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.routine-stat-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.routine-stat-value {
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* Red, but a darker shade than --bad so small text still passes 4.5:1. */
+.is-due { color: #b03030 !important; }
+
+.routine-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.routine-card:hover { border-color: #d9d9de; }
+
+.routine-days {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.routine-days small,
+.routine-hero-num small {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0;
+}
+
+.routine-sub {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.routine-bar {
+  margin-top: 12px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.routine-bar-lg { height: 8px; margin-top: 16px; background: #e4e4e8; }
+
+.routine-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ink);
+}
+
+.routine-bar-fill.is-due { background: var(--bad); }
+
+.routine-badge {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fbeaea;
+  color: #b03030;
+}
+
+.routine-hint {
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.routine-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.routine-detail-head .icon-button { width: 44px; height: 44px; }
+
+.routine-detail-head h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.routine-eyebrow {
+  margin: 0 0 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.routine-hero {
+  background: var(--surface-sunken);
+  border-radius: var(--radius-lg);
+  padding: 22px 20px;
+  margin-bottom: 14px;
+}
+
+.routine-hero-num {
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.routine-hero-num small { font-size: 17px; }
+
+.routine-hero-sub {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #4a4c55;
+}
+
+.routine-goal-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #4a4c55;
+}
+
+.routine-history { padding: 4px 18px; }
+
+.routine-log {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.routine-log:last-child { border-bottom: none; }
+
+.routine-log-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #c9cad0;
+  flex-shrink: 0;
+}
+
+.routine-log.is-latest .routine-log-dot { background: var(--ink); }
+
+.routine-log-date {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.routine-log-gap {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
